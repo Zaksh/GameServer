@@ -44,7 +44,6 @@ namespace LeagueSandbox.GameServer
         public float GameTime { get; private set; }
         private float _nextSyncTime = 10 * 1000;
 
-
         public ObjectManager ObjectManager { get; private set; }
         public Map Map { get; private set; }
         public IPacketNotifier PacketNotifier { get; private set; }

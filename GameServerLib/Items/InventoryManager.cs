@@ -15,12 +15,12 @@ namespace LeagueSandbox.GameServer.Items
             _inventory = new Inventory(this);
         }
 
-        public Item AddItem(ItemType item)
+        public Item AddItem(ItemData item)
         {
             return _inventory.AddItem(item);
         }
 
-        public Item SetExtraItem(byte slot, ItemType item)
+        public Item SetExtraItem(byte slot, ItemData item)
         {
             return _inventory.SetExtraItem(slot, item);
         }
@@ -96,9 +96,9 @@ namespace LeagueSandbox.GameServer.Items
             return GetItemSlot((Item)item);
         }
 
-        IItem IInventoryManager.SetExtraItem(byte slot, IItemType item)
+        IItem IInventoryManager.SetExtraItem(byte slot, IItemData item)
         {
-            return SetExtraItem(slot, (ItemType)item);
+            return SetExtraItem(slot, (ItemData)item);
         }
 
         IItem IInventoryManager.GetItem(int slot)

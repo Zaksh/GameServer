@@ -1,47 +1,37 @@
 ﻿using System.Collections.Generic;
 using System.Globalization;
 using GameServerCore.Content;
+using IniParser.Model;
+using LeagueSandbox.GameServer.Logging;
 
 namespace LeagueSandbox.GameServer.Content
 {
     public class ContentFile
     {
-        public Dictionary<string, Dictionary<string, string>> Values { get; set; }
-            = new Dictionary<string, Dictionary<string, string>>();
+        public IniData Values { get; set; }
 
-        public Dictionary<string, object> MetaData { get; set; }
-            = new Dictionary<string, object>();
-
-        private uint Hash(string section, string name)
+        public ContentFile(IniData data)
         {
-            uint hash = 0;
-            foreach (var c in section)
-            {
-                hash = char.ToLower(c) + 65599 * hash;
-            }
-            hash = char.ToLower('*') + 65599 * hash;
-            foreach (var c in name)
-            {
-                hash = char.ToLower(c) + 65599 * hash;
-            }
-
-            return hash;
+            Values = data;
         }
+
+        public ContentFile() : this(new IniData()) { }
 
         public string GetObject(string section, string name)
         {
-            if (Values.ContainsKey(section) && Values[section].ContainsKey(name)
+            if (Values.Sections.ContainsSection(section) && Values[section].ContainsKey(name)
                 && !string.IsNullOrEmpty(Values[section][name]))
             {
                 return Values[section][name];
             }
 
-            if (Values.ContainsKey("UNKNOWN_HASHES"))
+            if (Values.Sections.ContainsSection("UNKNOWN_HASHES"))
             {
                 var hash = HashFunctions.HashStringSdbm(section, name).ToString();
                 if (Values["UNKNOWN_HASHES"].ContainsKey(hash))
                 {
-                    //TODO: Log that unkown hash was found!
+                    LoggerProvider.GetLogger().Info($"UNKNOWN HASH {hash} WAS FOUND TO BE {section}*{name}!" +
+                                                    "PLEASE SHOW THIS LOG TO A DEVELOPER.");
                     return Values["UNKNOWN_HASHES"][hash];
                 }
             }
@@ -84,7 +74,7 @@ namespace LeagueSandbox.GameServer.Content
                 var list = obj.Split(' ');
                 if (defaultValue.Length == list.Length)
                 {
-                    for (var i = 0; i<defaultValue.Length; i++)
+                    for (var i = 0; i < defaultValue.Length; i++)
                     {
                         float.TryParse(list[i], NumberStyles.Any, CultureInfo.InvariantCulture, out defaultValue[i]);
                     }

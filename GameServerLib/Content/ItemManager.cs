@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using GameServerCore.Domain;
 using LeagueSandbox.GameServer.GameObjects.Stats;
@@ -8,57 +9,58 @@ namespace LeagueSandbox.GameServer.Content
 {
     public class ItemManager
     {
-        private Dictionary<int, ItemType> _itemTypes;
+        private Dictionary<int, ItemData> _itemData;
 
         public ItemManager()
         {
-            _itemTypes = new Dictionary<int, ItemType>();
+            _itemData = new Dictionary<int, ItemData>();
         }
 
-        public ItemType GetItemType(int itemId)
+        public ItemData GetItemType(int itemId)
         {
-            return _itemTypes[itemId];
+            return _itemData[itemId];
         }
 
-        public ItemType SafeGetItemType(int itemId, ItemType defaultValue)
+        public ItemData SafeGetItemType(int itemId, ItemData defaultValue)
         {
-            if (!_itemTypes.ContainsKey(itemId))
+            if (!_itemData.ContainsKey(itemId))
             {
                 return defaultValue;
             }
 
-            return _itemTypes[itemId];
+            return _itemData[itemId];
         }
 
-        public ItemType SafeGetItemType(int itemId)
+        public ItemData SafeGetItemType(int itemId)
         {
             return SafeGetItemType(itemId, null);
         }
 
         public void ResetItems()
         {
-            _itemTypes.Clear();
+            _itemData.Clear();
         }
 
-        public void LoadItems(string contentPath)
+        public void LoadItems(ContentManager contentManager)
         {
-            var itemContentCollection = ItemContentCollection.LoadItemsFrom(
-                $"{contentPath}/LeagueSandbox-Default/Items"
-            );
-
-            foreach (var entry in itemContentCollection)
+            foreach (var content in contentManager.Content)
             {
-                var itemType = ItemType.Load(this, entry.Value);
-                _itemTypes.Add(entry.Key, itemType);
+                if (!content.Key.ToLowerInvariant().StartsWith(Path.Combine("data", "items")))
+                {
+                    continue;
+                }
+
+                var split = content.Key.Replace('\\', '/').Split('/');
+                var itemIdStr = split.Last().Replace(".ini", "");
+
+                var itemData = ItemData.Load(this, content.Value, int.Parse(itemIdStr));
+                _itemData.Add(itemData.ItemId, itemData);
             }
         }
     }
 
-    public class ItemType : StatsModifier, IItemType
+    public class ItemData : StatsModifier, IItemData
     {
-        //private ItemManager _owner;
-        private ItemContentCollectionEntry _itemInfo;
-
         // Meta
         public int ItemId { get; private set; }
         public string Name { get; private set; }
@@ -80,96 +82,91 @@ namespace LeagueSandbox.GameServer.Content
         public ItemRecipe Recipe { get; private set; }
         public int TotalPrice => Recipe.TotalPrice;
 
-        private ItemType(ItemContentCollectionEntry itemInfo)
-        {
-            _itemInfo = itemInfo;
-        }
-
         private void CreateRecipe(ItemManager manager)
         {
             Recipe = ItemRecipe.FromItemType(this, manager);
         }
 
-        public static ItemType Load(ItemManager owner, ItemContentCollectionEntry itemInfo)
+        public static ItemData Load(ItemManager owner, ContentFile content, int itemId)
         {
             // Because IntelliSense is nice to have
-            var result = new ItemType(itemInfo)
+            var result = new ItemData
             {
-                ItemId = itemInfo.ItemId,
-                Name = itemInfo.Name,
-                MaxStack = itemInfo.GetInt("Data", "MaxStack"),
-                Price = itemInfo.GetInt("Data", "Price"),
-                ItemGroup = itemInfo.GetString("Data", "ItemGroup"),
-                SpellName = itemInfo.GetString("Data", "SpellName"),
-                SellBackModifier = itemInfo.GetFloat("Data", "SellBackModifier", 0.7f),
+                ItemId = itemId,
+                Name = content.GetString("Data", "DisplayName"),
+                MaxStack = content.GetInt("Data", "MaxStack"),
+                Price = content.GetInt("Data", "Price"),
+                ItemGroup = content.GetString("Data", "ItemGroup"),
+                SpellName = content.GetString("Data", "SpellName"),
+                SellBackModifier = content.GetFloat("Data", "SellBackModifier", 0.7f),
 
-                RecipeItem1 = itemInfo.GetInt("Data", "RecipeItem1", -1),
-                RecipeItem2 = itemInfo.GetInt("Data", "RecipeItem2", -1),
-                RecipeItem3 = itemInfo.GetInt("Data", "RecipeItem3", -1),
-                RecipeItem4 = itemInfo.GetInt("Data", "RecipeItem4", -1),
+                RecipeItem1 = content.GetInt("Data", "RecipeItem1", -1),
+                RecipeItem2 = content.GetInt("Data", "RecipeItem2", -1),
+                RecipeItem3 = content.GetInt("Data", "RecipeItem3", -1),
+                RecipeItem4 = content.GetInt("Data", "RecipeItem4", -1),
                 Armor =
                 {
-                    FlatBonus = itemInfo.GetFloat("Data", "FlatArmorMod"),
-                    PercentBonus = itemInfo.GetFloat("Data", "PercentArmorMod")
+                    FlatBonus = content.GetFloat("Data", "FlatArmorMod"),
+                    PercentBonus = content.GetFloat("Data", "PercentArmorMod")
                 },
                 CriticalChance =
                 {
-                    FlatBonus = itemInfo.GetFloat("Data", "FlatCritChanceMod")
+                    FlatBonus = content.GetFloat("Data", "FlatCritChanceMod")
                 },
                 HealthPoints =
                 {
-                    FlatBonus = itemInfo.GetFloat("Data", "FlatHPPoolMod"),
-                    PercentBonus = itemInfo.GetFloat("Data", "PercentHPPoolMod")
+                    FlatBonus = content.GetFloat("Data", "FlatHPPoolMod"),
+                    PercentBonus = content.GetFloat("Data", "PercentHPPoolMod")
                 },
                 ManaPoints =
                 {
-                    FlatBonus = itemInfo.GetFloat("Data", "FlatMPPoolMod"),
-                    PercentBonus = itemInfo.GetFloat("Data", "PercentMPPoolMod")
+                    FlatBonus = content.GetFloat("Data", "FlatMPPoolMod"),
+                    PercentBonus = content.GetFloat("Data", "PercentMPPoolMod")
                 },
                 AbilityPower =
                 {
-                    FlatBonus = itemInfo.GetFloat("Data", "FlatMagicDamageMod"),
-                    PercentBonus = itemInfo.GetFloat("Data", "PercentMagicDamageMod")
+                    FlatBonus = content.GetFloat("Data", "FlatMagicDamageMod"),
+                    PercentBonus = content.GetFloat("Data", "PercentMagicDamageMod")
                 },
                 MagicPenetration =
                 {
-                    FlatBonus = itemInfo.GetFloat("Data", "FlatMagicPenetrationMod")
+                    FlatBonus = content.GetFloat("Data", "FlatMagicPenetrationMod")
                 },
                 MoveSpeed =
                 {
-                    FlatBonus = itemInfo.GetFloat("Data", "FlatMovementSpeedMod"),
-                    PercentBonus = itemInfo.GetFloat("Data", "PercentMovementSpeedMod")
+                    FlatBonus = content.GetFloat("Data", "FlatMovementSpeedMod"),
+                    PercentBonus = content.GetFloat("Data", "PercentMovementSpeedMod")
                 },
                 AttackDamage =
                 {
-                    FlatBonus = itemInfo.GetFloat("Data", "FlatPhysicalDamageMod"),
-                    PercentBonus = itemInfo.GetFloat("Data", "PercentPhysicalDamageMod")
+                    FlatBonus = content.GetFloat("Data", "FlatPhysicalDamageMod"),
+                    PercentBonus = content.GetFloat("Data", "PercentPhysicalDamageMod")
                 },
                 MagicResist =
                 {
-                    FlatBonus = itemInfo.GetFloat("Data", "FlatSpellBlockMod"),
-                    PercentBonus = itemInfo.GetFloat("Data", "PercentSpellBlockMod")
+                    FlatBonus = content.GetFloat("Data", "FlatSpellBlockMod"),
+                    PercentBonus = content.GetFloat("Data", "PercentSpellBlockMod")
                 },
                 AttackSpeed =
                 {
-                    FlatBonus = itemInfo.GetFloat("Data", "PercentAttackSpeedMod")
+                    FlatBonus = content.GetFloat("Data", "PercentAttackSpeedMod")
                 },
                 HealthRegeneration =
                 {
-                    PercentBonus = itemInfo.GetFloat("Data", "PercentBaseHPRegenMod")
+                    PercentBonus = content.GetFloat("Data", "PercentBaseHPRegenMod")
                 },
                 ManaRegeneration =
                 {
-                    PercentBonus = itemInfo.GetFloat("Data", "PercentBaseMPRegenMod")
+                    PercentBonus = content.GetFloat("Data", "PercentBaseMPRegenMod")
                 },
                 CriticalDamage =
                 {
-                    FlatBonus = itemInfo.GetFloat("Data", "FlatCritDamageMod"),
-                    PercentBonus = itemInfo.GetFloat("Data", "PercentCritDamageMod")
+                    FlatBonus = content.GetFloat("Data", "FlatCritDamageMod"),
+                    PercentBonus = content.GetFloat("Data", "PercentCritDamageMod")
                 },
                 LifeSteel =
                 {
-                    FlatBonus = itemInfo.GetFloat("Data", "PercentLifeStealMod")
+                    FlatBonus = content.GetFloat("Data", "PercentLifeStealMod")
                 }
             };
 
@@ -187,8 +184,8 @@ namespace LeagueSandbox.GameServer.Content
 
     public class ItemRecipe
     {
-        private ItemType _owner;
-        private ItemType[] _items;
+        private ItemData _owner;
+        private ItemData[] _items;
         private int _totalPrice;
         private ItemManager _itemManager;
 
@@ -205,14 +202,14 @@ namespace LeagueSandbox.GameServer.Content
             }
         }
 
-        private ItemRecipe(ItemType owner, ItemManager manager)
+        private ItemRecipe(ItemData owner, ItemManager manager)
         {
             _owner = owner;
             _totalPrice = -1;
             _itemManager = manager;
         }
 
-        public List<ItemType> GetItems()
+        public List<ItemData> GetItems()
         {
             if (_items == null)
             {
@@ -248,7 +245,7 @@ namespace LeagueSandbox.GameServer.Content
             _totalPrice += _owner.Price;
         }
 
-        public static ItemRecipe FromItemType(ItemType type, ItemManager manager)
+        public static ItemRecipe FromItemType(ItemData type, ItemManager manager)
         {
             return new ItemRecipe(type, manager);
         }
@@ -258,13 +255,13 @@ namespace LeagueSandbox.GameServer.Content
     {
         public byte StackSize { get; private set; }
         public int TotalPrice { get; private set; }
-        public ItemType ItemType { get; private set; }
+        public ItemData ItemType { get; private set; }
 
-        IItemType IItem.ItemType => ItemType;
+        IItemData IItem.ItemData => ItemType;
 
         private Inventory _owner;
 
-        private Item(Inventory owner, ItemType type)
+        private Item(Inventory owner, ItemData type)
         {
             _owner = owner;
             ItemType = type;
@@ -293,7 +290,7 @@ namespace LeagueSandbox.GameServer.Content
             return true;
         }
 
-        public static Item CreateFromType(Inventory inventory, ItemType item)
+        public static Item CreateFromType(Inventory inventory, ItemData item)
         {
             return new Item(inventory, item);
         }

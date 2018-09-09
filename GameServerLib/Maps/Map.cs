@@ -32,7 +32,7 @@ namespace LeagueSandbox.GameServer.Maps
             var path = Path.Combine(
                 game.Config.ContentPath,
                 _game.Config.ContentManager.GameModeName,
-                "AIMesh",
+                "LEVELS",
                 "Map" + Id,
                 "AIPath.aimesh_ngrid"
             );

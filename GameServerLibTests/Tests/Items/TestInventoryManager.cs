@@ -1,4 +1,5 @@
 using System;
+using LeagueSandbox.GameServer;
 using LeagueSandbox.GameServer.Content;
 using LeagueSandbox.GameServer.Items;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -12,7 +13,8 @@ namespace LeagueSandbox.GameServerTests.Tests.Items
         public void TestAddAndGetItem()
         {
             var itemManager = new ItemManager();
-            itemManager.LoadItems("../../../Content");
+            var contentMgr = ContentManager.LoadGameMode(new Game(itemManager), "LeagueSandbox-Default", "../../../Content");
+            itemManager.LoadItems(contentMgr);
 
             var inventoryManager = InventoryManager.CreateInventory();
 
@@ -50,7 +52,9 @@ namespace LeagueSandbox.GameServerTests.Tests.Items
         public void TestItemStacking()
         {
             var itemManager = new ItemManager();
-            itemManager.LoadItems("../../../Content");
+            var contentMgr = ContentManager.LoadGameMode(new Game(itemManager), "LeagueSandbox-Default",
+                "../../../Content");
+            itemManager.LoadItems(contentMgr);
 
             var manager = InventoryManager.CreateInventory();
 
@@ -90,7 +94,9 @@ namespace LeagueSandbox.GameServerTests.Tests.Items
         public void TestSetExtraItem()
         {
             var itemManager = new ItemManager();
-            itemManager.LoadItems("../../../Content");
+            var contentMgr = ContentManager.LoadGameMode(new Game(itemManager), "LeagueSandbox-Default",
+                "../../../Content");
+            itemManager.LoadItems(contentMgr);
 
             var manager = InventoryManager.CreateInventory();
 
@@ -115,7 +121,9 @@ namespace LeagueSandbox.GameServerTests.Tests.Items
         public void TestGetItemSlot()
         {
             var itemManager = new ItemManager();
-            itemManager.LoadItems("../../../Content");
+            var contentMgr = ContentManager.LoadGameMode(new Game(itemManager), "LeagueSandbox-Default",
+                "../../../Content");
+            itemManager.LoadItems(contentMgr);
 
             var manager = InventoryManager.CreateInventory();
 
@@ -146,7 +154,9 @@ namespace LeagueSandbox.GameServerTests.Tests.Items
         public void TestRemoveItem()
         {
             var itemManager = new ItemManager();
-            itemManager.LoadItems("../../../Content");
+            var contentMgr = ContentManager.LoadGameMode(new Game(itemManager), "LeagueSandbox-Default",
+                "../../../Content");
+            itemManager.LoadItems(contentMgr);
 
             var manager = InventoryManager.CreateInventory();
 
@@ -171,7 +181,9 @@ namespace LeagueSandbox.GameServerTests.Tests.Items
         public void TestSwapItems()
         {
             var itemManager = new ItemManager();
-            itemManager.LoadItems("../../../Content");
+            var contentMgr = ContentManager.LoadGameMode(new Game(itemManager), "LeagueSandbox-Default",
+                "../../../Content");
+            itemManager.LoadItems(contentMgr);
 
             var manager = InventoryManager.CreateInventory();
 
@@ -222,7 +234,9 @@ namespace LeagueSandbox.GameServerTests.Tests.Items
         {
             var itemManager = new ItemManager();
             itemManager.ResetItems();
-            itemManager.LoadItems("../../../Content");
+            var contentMgr = ContentManager.LoadGameMode(new Game(itemManager), "LeagueSandbox-Default",
+                "../../../Content");
+            itemManager.LoadItems(contentMgr);
 
             var manager = InventoryManager.CreateInventory();
 
