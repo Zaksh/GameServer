@@ -21,22 +21,6 @@ namespace LeagueSandbox.GameServer.Scripting.CSharp
             _logger = LoggerProvider.GetLogger();
         }
 
-        public bool LoadSubdirectoryScripts(string folder)
-        {
-            var basePath = Path.GetFullPath(folder);
-            var allfiles = Directory.GetFiles(folder, "*.cs", SearchOption.AllDirectories).Where((string pathString) => {
-                var fileBasePath = Path.GetFullPath(pathString);
-                var trimmedPath = fileBasePath.Remove(0, basePath.Length);
-                string[] directories = trimmedPath.ToLower().Split(Path.DirectorySeparatorChar);
-                if (directories.Contains("bin") || directories.Contains("obj"))
-                {
-                    return false;
-                }
-                return true;
-            });
-            return Load(new List<string>(allfiles));
-        }
-
         //Takes about 300 milliseconds for a single script
         public bool Load(List<string> scriptLocations)
         {

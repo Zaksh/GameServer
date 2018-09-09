@@ -132,7 +132,7 @@ namespace LeagueSandbox.GameServer
 
         public bool LoadScripts()
         {
-            return ScriptEngine.LoadSubdirectoryScripts($"{Config.ContentPath}/{Config.GameConfig.GameMode}/");
+            return ScriptEngine.Load(Config.ContentManager.CSharpScriptFiles);
         }
 
         public void NetLoop()

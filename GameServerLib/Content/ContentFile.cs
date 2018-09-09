@@ -8,24 +8,24 @@ namespace LeagueSandbox.GameServer.Content
 {
     public class ContentFile
     {
-        public IniData Values { get; set; }
+        public Dictionary<string, Dictionary<string, string>> Values { get; set; }
 
-        public ContentFile(IniData data)
+        public ContentFile(Dictionary<string, Dictionary<string, string>> data)
         {
             Values = data;
         }
 
-        public ContentFile() : this(new IniData()) { }
+        public ContentFile() : this(new Dictionary<string, Dictionary<string, string>>()) { }
 
         public string GetObject(string section, string name)
         {
-            if (Values.Sections.ContainsSection(section) && Values[section].ContainsKey(name)
+            if (Values.ContainsKey(section) && Values[section].ContainsKey(name)
                 && !string.IsNullOrEmpty(Values[section][name]))
             {
                 return Values[section][name];
             }
 
-            if (Values.Sections.ContainsSection("UNKNOWN_HASHES"))
+            if (Values.ContainsKey("UNKNOWN_HASHES"))
             {
                 var hash = HashFunctions.HashStringSdbm(section, name).ToString();
                 if (Values["UNKNOWN_HASHES"].ContainsKey(hash))

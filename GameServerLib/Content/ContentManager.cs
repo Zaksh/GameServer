@@ -18,8 +18,10 @@ namespace LeagueSandbox.GameServer.Content
 
         private Dictionary<string, SpellData> _spellData = new Dictionary<string, SpellData>();
         private Dictionary<string, CharData> _charData = new Dictionary<string, CharData>();
+        private Dictionary<string, NavGrid> _navGrids = new Dictionary<string, NavGrid>();
 
         public Dictionary<string, ContentFile> Content = new Dictionary<string, ContentFile>();
+        public List<string> CSharpScriptFiles = new List<string>();
 
         private string _contentPath;
         public string GameModeName { get; }
@@ -99,19 +101,68 @@ namespace LeagueSandbox.GameServer.Content
             return _charData[charName];
         }
 
+        public NavGrid GetNavGrid(string navGridPath)
+        {
+            if (_navGrids.ContainsKey(navGridPath))
+            {
+                return _navGrids[navGridPath];
+            }
+
+            throw new ContentNotFoundException($"NavGrid with path {navGridPath} was not loaded.");
+        }
+
         public static ContentManager LoadGameMode(Game game, string gameModeName, string contentPath)
         {
             var contentManager = new ContentManager(game, gameModeName, contentPath);
             var iniParser = new FileIniDataParser();
-            foreach (var file in GameServerCore.Extensions.GetAllFilesInDirectory(contentPath,
-                x => x.EndsWith(".ini")))
+            foreach (var file in Directory.GetFiles(contentPath, "*.*", SearchOption.AllDirectories))
             {
                 var relativePath = file.Replace(contentPath, "").Replace(gameModeName, "").Substring(2);
-                contentManager.Content[relativePath] = new ContentFile(iniParser.ReadFile(file));
+                if (file.EndsWith(".ini"))
+                {
+                    var ini = iniParser.ReadFile(file);
+                    contentManager.Content[relativePath] = new ContentFile(ParseIniFile(ini));
+                }
+                else if (file.EndsWith(".cs"))
+                {
+                    if (relativePath.StartsWith("bin") || relativePath.StartsWith("obj"))
+                    {
+                        continue;
+                    }
+
+                    contentManager.CSharpScriptFiles.Add(file);
+                }
+                else if (file.EndsWith(".aimesh_ngrid"))
+                {
+                    contentManager._navGrids[relativePath] = NavGridReader.ReadBinary(file);
+                }
+                else
+                {
+                    continue;
+                }
+
                 contentManager._logger.Debug($"Mapped Content [{relativePath}]");
             }
 
             return contentManager;
+        }
+
+        public static Dictionary<string, Dictionary<string, string>> ParseIniFile(IniData data)
+        {
+            var ret = new Dictionary<string, Dictionary<string, string>>();
+            foreach (var section in data.Sections)
+            {
+                if (!ret.ContainsKey(section.SectionName))
+                {
+                    ret[section.SectionName] = new Dictionary<string, string>();
+                }
+                foreach (var field in section.Keys)
+                {
+                    ret[section.SectionName][field.KeyName] = field.Value;
+                }
+            }
+
+            return ret;
         }
 
         private static bool ValidatePackageName(string packageName)
