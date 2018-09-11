@@ -22,14 +22,14 @@ namespace LeagueSandbox.GameServer.Scripting.CSharp
         }
 
         //Takes about 300 milliseconds for a single script
-        public bool Load(List<string> scriptLocations)
+        public bool LoadFromFiles(Dictionary<string, byte[]> scriptFiles)
         {
             bool compiledSuccessfully;
             var treeList = new List<SyntaxTree>();
-            Parallel.For(0, scriptLocations.Count, i =>
+            Parallel.ForEach(scriptFiles, keyValuePair =>
             {
-                _logger.Debug($"Loading script: {scriptLocations[i]}");
-                using (var sr = new StreamReader(scriptLocations[i]))
+                _logger.Debug($"Loading script: {keyValuePair.Key}");
+                using (var sr = new StreamReader(new MemoryStream(keyValuePair.Value)))
                 {
                     // Read the stream to a string, and write the string to the console.
                     var syntaxTree = CSharpSyntaxTree.ParseText(sr.ReadToEnd());
@@ -39,6 +39,7 @@ namespace LeagueSandbox.GameServer.Scripting.CSharp
                     }
                 }
             });
+
             var assemblyName = Path.GetRandomFileName();
 
             var references = new List<MetadataReference>();

@@ -132,7 +132,18 @@ namespace LeagueSandbox.GameServer
 
         public bool LoadScripts()
         {
-            return ScriptEngine.Load(Config.ContentManager.CSharpScriptFiles);
+            var scripts = new Dictionary<string, byte[]>();
+            foreach (var contentData in Config.ContentManager.Content)
+            {
+                if (!contentData.Key.EndsWith(".cs"))
+                {
+                    continue;
+                }
+
+                scripts.Add(contentData.Key, contentData.Value);
+            }
+
+            return ScriptEngine.LoadFromFiles(scripts);
         }
 
         public void NetLoop()

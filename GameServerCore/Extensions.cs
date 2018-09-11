@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
-using System.Linq;
 using System.Numerics;
 using System.Text;
 using GameServerCore.Enums;
@@ -94,69 +92,6 @@ namespace GameServerCore
         public static double RadianToDegree(double angle)
         {
             return angle * (180.0 / Math.PI);
-        }
-
-        public static IEnumerable<string> GetAllFilesInDirectory(string directory, Predicate<string> pred)
-        {
-            if (pred == null)
-            {
-                pred = _ => true;
-            }
-
-            var list = Directory.GetFiles(directory).Where(x => pred.Invoke(x)).ToList();
-
-            foreach (var subdirectory in Directory.GetDirectories(directory))
-            {
-                list.AddRange(GetAllFilesInDirectory(subdirectory, pred));
-            }
-
-            return list;
-        }
-    }
-
-    public class PairList<TKey, TValue> : List<Pair<TKey, TValue>>
-    {
-        public void Add(TKey key, TValue value)
-        {
-            Add(new Pair<TKey, TValue>(key, value));
-        }
-        public bool ContainsKey(TKey key)
-        {
-            foreach (var v in this)
-            {
-                if (v.Item1.Equals(key))
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        public TValue this[TKey key]
-        {
-            get
-            {
-                foreach (var v in this)
-                {
-                    if (v.Item1.Equals(key))
-                    {
-                        return v.Item2;
-                    }
-                }
-
-                return default(TValue);
-            }
-            set
-            {
-                foreach (var v in this)
-                {
-                    if (v.Item1.Equals(key))
-                    {
-                        v.Item2 = value;
-                    }
-                }
-            }
         }
     }
 

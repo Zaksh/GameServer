@@ -1,10 +1,10 @@
 ﻿using System;
 using System.IO;
 using GameServerCore.Enums;
+using IniParser;
 using LeagueSandbox.GameServer.Logging;
 using log4net;
 using LeagueSandbox.GameServer.Exceptions;
-using Newtonsoft.Json;
 
 namespace LeagueSandbox.GameServer.Content
 {
@@ -79,12 +79,17 @@ namespace LeagueSandbox.GameServer.Content
                 return;
             }
 
-            var file = new ContentFile();
+            ContentFile file;
             try
             {
                 var path = _game.Config.ContentManager.GetUnitStatPath(name);
+                var iniParser = new FileIniDataParser();
                 _logger.Debug($"Loading {name}'s Stats from path: {Path.GetFullPath(path)}!");
-                file = _game.Config.ContentManager.Content[path];
+                using (var stream = new StreamReader(new MemoryStream(_game.Config.ContentManager.Content[path])))
+                {
+                    var iniData = iniParser.ReadData(stream);
+                    file = new ContentFile(ContentManager.ParseIniFile(iniData));
+                }
             }
             catch (ContentNotFoundException notfound)
             {

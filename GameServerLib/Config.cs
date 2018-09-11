@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Numerics;
+using System.Text;
 using LeagueSandbox.GameServer.Content;
 using Newtonsoft.Json.Linq;
 
@@ -76,7 +77,7 @@ namespace LeagueSandbox.GameServer
             // Read spawns info
             ContentManager = ContentManager.LoadGameMode(game, GameConfig.GameMode, ContentPath);
             var mapPath = ContentManager.GetMapConfigPath(GameConfig.Map);
-            var mapData = JObject.Parse(File.ReadAllText(mapPath));
+            var mapData = JObject.Parse(Encoding.UTF8.GetString(ContentManager.Content[mapPath]));
             var spawns = mapData.SelectToken("spawns");
 
             // Load items

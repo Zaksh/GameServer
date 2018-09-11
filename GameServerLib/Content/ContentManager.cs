@@ -1,13 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
-using IniParser;
 using IniParser.Model;
 using LeagueSandbox.GameServer.Logging;
 using log4net;
 using LeagueSandbox.GameServer.Exceptions;
-using Newtonsoft.Json.Linq;
 
 namespace LeagueSandbox.GameServer.Content
 {
@@ -20,15 +18,12 @@ namespace LeagueSandbox.GameServer.Content
         private Dictionary<string, CharData> _charData = new Dictionary<string, CharData>();
         private Dictionary<string, NavGrid> _navGrids = new Dictionary<string, NavGrid>();
 
-        public Dictionary<string, ContentFile> Content = new Dictionary<string, ContentFile>();
-        public List<string> CSharpScriptFiles = new List<string>();
+        public Dictionary<string, byte[]> Content = new Dictionary<string, byte[]>();
 
-        private string _contentPath;
         public string GameModeName { get; }
 
-        private ContentManager(Game game, string gameModeName, string contentPath)
+        private ContentManager(Game game, string gameModeName)
         {
-            _contentPath = contentPath;
             _game = game;
             _logger = LoggerProvider.GetLogger();
 
@@ -37,18 +32,26 @@ namespace LeagueSandbox.GameServer.Content
 
         public string GetMapConfigPath(int mapId)
         {
-            var path = Path.Combine(_contentPath, GameModeName, "LEVELS", $"Map{mapId}", $"Map{mapId}.json");
-            if (!File.Exists(path))
+            var possibilities = new[]
             {
-                throw new ContentNotFoundException($"Map configuration for Map {mapId} was not found in the content.");
+                $"LEVELS/Map{mapId}/Map{mapId}.json",
+                $"LEVELS/map{mapId}/Map{mapId}.json"
+            };
+
+            foreach (var path in possibilities)
+            {
+                if (Content.ContainsKey(path))
+                {
+                    return path;
+                }
             }
 
-            return path;
+            throw new ContentNotFoundException($"Map configuration for Map {mapId} was not found in the content.");
         }
 
         public string GetUnitStatPath(string model)
         {
-            var path = Path.Combine("DATA", "Characters", model, $"{model}.ini");
+            var path = $"DATA/Characters/{model}/{model}.ini";
             if (!Content.ContainsKey(path))
             {
                 throw new ContentNotFoundException($"Stat file for {model} was not found.");
@@ -61,9 +64,9 @@ namespace LeagueSandbox.GameServer.Content
         {
             var possibilities = new[]
             {
-                Path.Combine("DATA", "Characters", model, "Spells", $"{spellName}.ini"),
-                Path.Combine("DATA", "Shared", "Spells", $"{spellName}.ini"),
-                Path.Combine("DATA", "Spells", $"{spellName}.ini")
+                $"DATA/Characters/{model}/Spells/{spellName}.ini",
+                $"DATA/Shared/Spells/{spellName}.ini",
+                $"DATA/Spells/{spellName}.ini"
             };
 
             foreach (var path in possibilities)
@@ -101,27 +104,84 @@ namespace LeagueSandbox.GameServer.Content
             return _charData[charName];
         }
 
-        public NavGrid GetNavGrid(string navGridPath)
+        public NavGrid GetNavGrid(int mapId)
         {
-            if (_navGrids.ContainsKey(navGridPath))
+            var possibilities = new[]
             {
-                return _navGrids[navGridPath];
+                $"LEVELS/Map{mapId}/AIPath.aimesh_ngrid",
+                $"LEVELS/map{mapId}/AIPath.aimesh_ngrid"
+            };
+            foreach (var path in possibilities)
+            {
+                if (_navGrids.ContainsKey(path))
+                {
+                    return _navGrids[path];
+                }
             }
 
-            throw new ContentNotFoundException($"NavGrid with path {navGridPath} was not loaded.");
+            throw new ContentNotFoundException($"NavGrid for map {mapId} was not loaded.");
         }
 
         public static ContentManager LoadGameMode(Game game, string gameModeName, string contentPath)
         {
-            var contentManager = new ContentManager(game, gameModeName, contentPath);
-            var iniParser = new FileIniDataParser();
+            var contentManager = new ContentManager(game, gameModeName);
+
+            var zipPath = Path.Combine(contentPath, gameModeName, gameModeName + ".zip");
+
+            // If zip exists
+            if (File.Exists(zipPath))
+            {
+                // Read zip file data
+                using (var file = File.OpenRead(zipPath))
+                {
+                    // Read archive data
+                    using (var zip = new ZipArchive(file, ZipArchiveMode.Read))
+                    {
+                        // For every entry in the zip
+                        foreach (var entry in zip.Entries)
+                        {
+                            // Uncompress the entry and read it
+                            using (var entryData = new BinaryReader(entry.Open()))
+                            {
+                                if (entry.FullName.EndsWith(".ini") || entry.FullName.EndsWith(".json"))
+                                {
+                                    contentManager.Content[entry.FullName] = entryData.ReadBytes((int)entry.Length);
+                                }
+                                else if (entry.FullName.EndsWith(".aimesh_ngrid"))
+                                {
+                                    contentManager._navGrids[entry.FullName] =
+                                        NavGridReader.ReadBinary(entryData.ReadBytes((int)entry.Length));
+
+                                    contentManager.Content[entry.FullName] = entryData.ReadBytes((int)entry.Length);
+                                }
+                                else if (entry.FullName.EndsWith(".cs"))
+                                {
+                                    if (entry.FullName.StartsWith("bin") || entry.FullName.StartsWith("obj"))
+                                    {
+                                        continue;
+                                    }
+
+                                    contentManager.Content[entry.FullName] = entryData.ReadBytes((int)entry.Length);
+                                }
+                                else
+                                {
+                                    continue;
+                                }
+
+                                contentManager._logger.Debug($"Mapped content from zip [{entry.FullName}]");
+                            }
+                        }
+                    }
+                }
+            }
+
             foreach (var file in Directory.GetFiles(contentPath, "*.*", SearchOption.AllDirectories))
             {
-                var relativePath = file.Replace(contentPath, "").Replace(gameModeName, "").Substring(2);
-                if (file.EndsWith(".ini"))
+                var relativePath = file.Replace(contentPath, "").Replace(gameModeName, "").Substring(2)
+                    .Replace('\\', '/');
+                if (file.EndsWith(".ini") || file.EndsWith(".json"))
                 {
-                    var ini = iniParser.ReadFile(file);
-                    contentManager.Content[relativePath] = new ContentFile(ParseIniFile(ini));
+                    contentManager.Content[relativePath] = File.ReadAllBytes(file);
                 }
                 else if (file.EndsWith(".cs"))
                 {
@@ -130,10 +190,11 @@ namespace LeagueSandbox.GameServer.Content
                         continue;
                     }
 
-                    contentManager.CSharpScriptFiles.Add(file);
+                    contentManager.Content[relativePath] = File.ReadAllBytes(file);
                 }
                 else if (file.EndsWith(".aimesh_ngrid"))
                 {
+                    contentManager.Content[relativePath] = File.ReadAllBytes(file);
                     contentManager._navGrids[relativePath] = NavGridReader.ReadBinary(file);
                 }
                 else
@@ -156,6 +217,7 @@ namespace LeagueSandbox.GameServer.Content
                 {
                     ret[section.SectionName] = new Dictionary<string, string>();
                 }
+
                 foreach (var field in section.Keys)
                 {
                     ret[section.SectionName][field.KeyName] = field.Value;

@@ -2,6 +2,7 @@
 using System.IO;
 using System.Linq;
 using GameServerCore.Domain;
+using IniParser;
 using LeagueSandbox.GameServer.GameObjects.Stats;
 using LeagueSandbox.GameServer.Items;
 
@@ -43,17 +44,25 @@ namespace LeagueSandbox.GameServer.Content
 
         public void LoadItems(ContentManager contentManager)
         {
+            var iniParser = new FileIniDataParser();
             foreach (var content in contentManager.Content)
             {
-                if (!content.Key.ToLowerInvariant().StartsWith(Path.Combine("data", "items")))
+                if (!content.Key.StartsWith("DATA/Items"))
                 {
                     continue;
                 }
 
-                var split = content.Key.Replace('\\', '/').Split('/');
+                var split = content.Key.Split('/');
                 var itemIdStr = split.Last().Replace(".ini", "");
 
-                var itemData = ItemData.Load(this, content.Value, int.Parse(itemIdStr));
+                ContentFile contentFile;
+                using (var stream = new StreamReader(new MemoryStream(content.Value)))
+                {
+                    var iniData = iniParser.ReadData(stream);
+                    contentFile = new ContentFile(ContentManager.ParseIniFile(iniData));
+                }
+
+                var itemData = ItemData.Load(this, contentFile, int.Parse(itemIdStr));
                 _itemData.Add(itemData.ItemId, itemData);
             }
         }
