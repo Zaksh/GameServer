@@ -14,7 +14,7 @@ namespace LeagueSandbox.GameServer.Chatbox.Commands
 
         public override void Execute(Peer peer, bool hasReceivedArguments, string arguments = "")
         {
-            if (Game.LoadScripts())
+            if (Game.LoadScripts(true))
             {
                 ChatCommandManager.SendDebugMsgFormatted(DebugMsgType.INFO, "Scripts reloaded.");
             }

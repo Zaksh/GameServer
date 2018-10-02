@@ -130,8 +130,10 @@ namespace LeagueSandbox.GameServer
             _logger.Info("Game is ready.");
         }
 
-        public bool LoadScripts()
+        public bool LoadScripts(bool doReloadContent = false)
         {
+            // todo: use the optional arg to *actually* reload the scripts
+            // current code only takes what was loaded in the startup and loads them back in, so it does nothing
             var scripts = new Dictionary<string, byte[]>();
             foreach (var contentData in Config.ContentManager.Content)
             {
@@ -143,7 +145,7 @@ namespace LeagueSandbox.GameServer
                 scripts.Add(contentData.Key, contentData.Value);
             }
 
-            return ScriptEngine.LoadFromFiles(scripts);
+            return ScriptEngine.LoadFromData(scripts);
         }
 
         public void NetLoop()

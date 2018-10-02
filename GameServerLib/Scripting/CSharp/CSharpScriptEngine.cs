@@ -22,7 +22,7 @@ namespace LeagueSandbox.GameServer.Scripting.CSharp
         }
 
         //Takes about 300 milliseconds for a single script
-        public bool LoadFromFiles(Dictionary<string, byte[]> scriptFiles)
+        public bool LoadFromData(Dictionary<string, byte[]> scriptFiles)
         {
             bool compiledSuccessfully;
             var treeList = new List<SyntaxTree>();

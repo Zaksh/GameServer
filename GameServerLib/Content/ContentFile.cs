@@ -94,9 +94,10 @@ namespace LeagueSandbox.GameServer.Content
                 {
                     for (var i = 0; i < defaultValue.Length; i++)
                     {
-                        float value;
-                        if (float.TryParse(list[i], NumberStyles.Any, CultureInfo.InvariantCulture, out value))
+                        if (float.TryParse(list[i], NumberStyles.Any, CultureInfo.InvariantCulture, out var value))
+                        {
                             defaultValue[i] = (int)value;
+                        }
                     }
                 }
             }

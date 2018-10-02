@@ -47,7 +47,7 @@ namespace LeagueSandbox.GameServer.Content
             var iniParser = new FileIniDataParser();
             foreach (var content in contentManager.Content)
             {
-                if (!content.Key.StartsWith("DATA/Items"))
+                if (!content.Key.StartsWith("DATA/Items") || !content.Key.EndsWith(".ini"))
                 {
                     continue;
                 }

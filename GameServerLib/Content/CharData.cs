@@ -115,7 +115,7 @@ namespace LeagueSandbox.GameServer.Content
             HpRegenPerLevel = file.GetFloat("Data", "HPRegenPerLevel", HpRegenPerLevel);
             MpRegenPerLevel = file.GetFloat("Data", "MPRegenPerLevel", MpRegenPerLevel);
             AttackSpeedPerLevel = file.GetFloat("Data", "AttackSpeedPerLevel", AttackSpeedPerLevel);
-            IsMelee = file.GetString("Data", "IsMelee", IsMelee ? "Yes" : "No").ToLower().Equals("yes");
+            IsMelee = file.GetString("Data", "IsMelee", IsMelee ? "Yes" : "No").ToLowerInvariant().Equals("yes");
             PathfindingCollisionRadius =
                 file.GetFloat("Data", "PathfindingCollisionRadius", PathfindingCollisionRadius);
             GameplayCollisionRadius = file.GetFloat("Data", "GameplayCollisionRadius", GameplayCollisionRadius);

@@ -175,6 +175,7 @@ namespace LeagueSandbox.GameServer.Content
                 }
             }
 
+            // Read non-zipped data
             foreach (var file in Directory.GetFiles(contentPath, "*.*", SearchOption.AllDirectories))
             {
                 var relativePath = file.Replace(contentPath, "").Replace(gameModeName, "").Substring(2)
